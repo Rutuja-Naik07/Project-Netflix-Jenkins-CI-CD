@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netflix - Movie Explorer</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #080808;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+  padding: 16px 5%;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: linear-gradient(#080808, transparent);
+}
+
+.logo {
+  color: #e50914;
+  font-size: 30px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+}
+
+nav input {
+  margin-left: auto;
+  width: 190px;
+  padding: 10px;
+  border: 1px solid #777;
+  border-radius: 5px;
+  background: #111;
+  color: white;
+}
+
+.hero {
+  min-height: 650px;
+  display: flex;
+  align-items: center;
+  padding: 110px 6% 140px;
+  background:
+    linear-gradient(90deg, #080808 0%, #080808d9 30%, transparent 100%),
+    linear-gradient(0deg, #080808, transparent 55%),
+    url("https://image.tmdb.org/t/p/original/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg")
+    center 25% / cover no-repeat;
+}
+
+.hero-content { max-width: 550px; }
+
+.hero h1 {
+  font-size: clamp(42px, 7vw, 76px);
+  margin: 12px 0;
+  line-height: 1;
+}
+
+.hero p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #eee;
+}
+
+button {
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 8px 8px 8px 0;
+}
+
+.play { background: white; color: black; }
+.info { background: #555; color: white; }
+
+main {
+  position: relative;
+  margin-top: -95px;
+  padding-bottom: 35px;
+}
+
+.movie-section { padding: 0 5%; margin-bottom: 35px; }
+
+.movie-section h2 { font-size: 23px; }
+
+.movie-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.movie-card {
+  background: #171717;
+  border-radius: 7px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.movie-card:hover {
+  transform: scale(1.04);
+  box-shadow: 0 8px 25px #000a;
+}
+
+.poster {
+  height: 285px;
+  position: relative;
+  background: linear-gradient(145deg, #262626, #090909);
+  overflow: hidden;
+}
+
+.poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 12px;
+  text-align: center;
+  background: radial-gradient(ellipse at top, #6b1820, #101010 75%);
+}
+
+.poster-fallback strong {
+  font-size: 23px;
+  text-transform: uppercase;
+}
+
+.poster-fallback small {
+  margin-top: 8px;
+  color: #ddd;
+}
+
+.movie-info { padding: 12px; }
+
+.movie-info h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+
+.movie-info p {
+  font-size: 12px;
+  color: #bbb;
+  margin: 0;
+}
+
+#searchMessage {
+  padding: 0 5%;
+  color: #bbb;
+}
+
+footer {
+  padding: 30px 5%;
+  border-top: 1px solid #292929;
+  color: #888;
+}
+
+/* Movie details popup */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  padding: 20px;
+  background: #000d;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.modal.show { display: flex; }
+
+.modal-box {
+  width: min(780px, 100%);
+  background: #181818;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  margin: auto;
+}
+
+.close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 2;
+  border-radius: 50%;
+  font-size: 24px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: #222;
+  color: white;
+}
+
+.detail-banner {
+  min-height: 280px;
+  padding: 110px 25px 25px;
+  background: linear-gradient(0deg, #181818, transparent),
+              linear-gradient(90deg, #181818aa, transparent);
+  background-position: center;
+  background-size: cover;
+}
+
+.detail-banner h2 { font-size: 38px; margin: 0 0 12px; }
+
+.detail-content { padding: 0 25px 25px; }
+
+.detail-content p { line-height: 1.7; color: #ddd; }
+
+.detail-meta { color: #46d369; font-weight: bold; }
+
+@media (max-width: 1000px) {
+  .movie-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .poster { height: 270px; }
+}
+
+@media (max-width: 650px) {
+  nav { gap: 14px; padding: 12px 4%; flex-wrap: wrap; }
+  .logo { font-size: 24px; }
+  nav a { font-size: 13px; }
+  nav input { width: 100%; margin: 0; }
+  .hero {
+    min-height: 590px;
+    padding: 130px 5% 110px;
+    background-position: 58% center;
+  }
+  .hero h1 { font-size: 43px; }
+  .hero p { font-size: 15px; }
+  main { margin-top: -65px; }
+  .movie-section { padding: 0 4%; }
+  .movie-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .poster { height: auto; aspect-ratio: 2 / 3; }
+  .detail-banner { min-height: 230px; padding: 95px 18px 20px; }
+  .detail-banner h2 { font-size: 29px; }
+  .detail-content { padding: 0 18px 20px; }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <a href="#" class="logo">NETFLIX</a>
+  <a href="#home">Home</a>
+  <a href="#movies">Movies</a>
+  <input id="search" type="search" placeholder="Search movies...">
+</nav>
+
+<section class="hero" id="home">
+  <div class="hero-content">
+    <p> N SERIES · FEATURED MOVIE</p>
+    <h1>DUNE: PART TWO</h1>
+    <p>2024 · 2h 46m · Sci-Fi · Adventure</p>
+    <p>
+      Paul Atreides joins Chani and the Fremen on an epic journey
+      to seek justice and protect the future of Arrakis.
+    </p>
+    <button class="play" onclick="showMovie('dune')">▶ Play</button>
+    <button class="info" onclick="showMovie('dune')">ⓘ More Info</button>
+  </div>
+</section>
+
+<main id="movies">
+  <section class="movie-section">
+    <h2>🔥 New & Trending Movies</h2>
+    <div class="movie-row" id="trending"></div>
+  </section>
+
+  <section class="movie-section">
+    <h2>🚀 Sci-Fi & Adventure</h2>
+    <div class="movie-row" id="scifi"></div>
+  </section>
+
+  <section class="movie-section">
+    <h2>🎬 Action & Entertainment</h2>
+    <div class="movie-row" id="action"></div>
+  </section>
+
+  <p id="searchMessage"></p>
+</main>
+
+<footer>
+  Netflix-inspired movie website demo · Responsive HTML, CSS and JavaScript
+</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="close" onclick="closeMovie()" aria-label="Close">×</button>
+    <div class="detail-banner" id="detailBanner">
+      <h2 id="detailTitle"></h2>
+      <div id="detailMeta" class="detail-meta"></div>
+    </div>
+    <div class="detail-content">
+      <p id="detailDescription"></p>
+      <p><strong>Genre:</strong> <span id="detailGenre"></span></p>
+      <p><strong>Cast:</strong> <span id="detailCast"></span></p>
+      <button class="play" onclick="alert('Demo only: no video stream is connected.')">
+        ▶ Play
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const movies = [
+  {
+    id: "dune", title: "Dune: Part Two", year: 2024,
+    genre: "Sci-Fi, Adventure",
+    cast: "Timothée Chalamet, Zendaya, Rebecca Ferguson",
+    description: "Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family. The future of Arrakis hangs in the balance.",
+    poster: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+    rows: ["trending", "scifi"]
+  },
+  {
+    id: "insideout", title: "Inside Out 2", year: 2024,
+    genre: "Animation, Comedy",
+    cast: "Amy Poehler, Maya Hawke, Kensington Tallman",
+    description: "Riley enters her teenage years, and headquarters makes room for new emotions in this colourful story about growing up.",
+    poster: "https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/xg27NrXi7VXCGUr7MG75UqLl6Vg.jpg",
+    rows: ["trending"]
+  },
+  {
+    id: "deadpool", title: "Deadpool & Wolverine", year: 2024,
+    genre: "Action, Comedy",
+    cast: "Ryan Reynolds, Hugh Jackman, Emma Corrin",
+    description: "Deadpool is pulled into a new mission and reluctantly teams up with Wolverine in a wild multiverse adventure.",
+    poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUut5Sxj0g3e2UB8.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg",
+    rows: ["trending", "action"]
+  },
+  {
+    id: "oppenheimer", title: "Oppenheimer", year: 2023,
+    genre: "Drama, History",
+    cast: "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
+    description: "The story of J. Robert Oppenheimer and the scientific, political and personal consequences of the first atomic bomb.",
+    poster: "https://image.tmdb.org/t/p/w500/ptpr0kGAckfQkJeJIt8st5dglvd.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    rows: ["trending", "action"]
+  },
+  {
+    id: "batman", title: "The Batman", year: 2022,
+    genre: "Action, Crime",
+    cast: "Robert Pattinson, Zoë Kravitz, Paul Dano",
+    description: "Batman investigates a trail of clues left by a killer and uncovers corruption deep within Gotham City.",
+    poster: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/b0PlSFdDwbyK0cf5RxwDpaOJQvQ.jpg",
+    rows: ["trending", "action"]
+  },
+  {
+    id: "barbie", title: "Barbie", year: 2023,
+    genre: "Comedy, Fantasy",
+    cast: "Margot Robbie, Ryan Gosling, America Ferrera",
+    description: "An unexpected change sends Barbie on an adventure about identity, friendship and discovering who you are.",
+    poster: "https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/ctMserH8g2SeOAnCw5gFjdQF8mo.jpg",
+    rows: ["trending"]
+  },
+  {
+    id: "godzilla", title: "Godzilla x Kong", year: 2024,
+    genre: "Sci-Fi, Action",
+    cast: "Rebecca Hall, Brian Tyree Henry, Dan Stevens",
+    description: "Godzilla and Kong face a colossal threat hidden deep within the world, putting humanity and the Titans at risk.",
+    poster: "https://image.tmdb.org/t/p/w500/z1p34vh7dEOnLDmyCrlUVLuoDzd.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/2C3CdVzINUm5Cm1lrbT2uiRstwX.jpg",
+    rows: ["trending", "scifi", "action"]
+  },
+  {
+    id: "wildrobot", title: "The Wild Robot", year: 2024,
+    genre: "Animation, Adventure",
+    cast: "Lupita Nyong'o, Pedro Pascal, Kit Connor",
+    description: "A robot stranded on an island learns to survive in the wilderness and forms an unlikely bond with a young gosling.",
+    poster: "https://image.tmdb.org/t/p/w500/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/2w4xG178RpB4MDAIfTkqAuSJzec.jpg",
+    rows: ["trending"]
+  },
+  {
+    id: "interstellar", title: "Interstellar", year: 2014,
+    genre: "Sci-Fi, Drama",
+    cast: "Matthew McConaughey, Anne Hathaway, Jessica Chastain",
+    description: "Explorers travel beyond our galaxy to discover whether humanity has a future among the stars.",
+    poster: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxelW9V0.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
+    rows: ["scifi"]
+  },
+  {
+    id: "martian", title: "The Martian", year: 2015,
+    genre: "Sci-Fi, Adventure",
+    cast: "Matt Damon, Jessica Chastain, Chiwetel Ejiofor",
+    description: "Stranded on Mars, an astronaut uses science and ingenuity to survive while Earth races to bring him home.",
+    poster: "https://image.tmdb.org/t/p/w500/5aGhaIHYuQbqlHWvWYqMCnj40y2.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/7u3pxc0K1wx32IleAkLv78MKgrw.jpg",
+    rows: ["scifi"]
+  },
+  {
+    id: "spiderverse", title: "Across the Spider-Verse", year: 2023,
+    genre: "Animation, Action",
+    cast: "Shameik Moore, Hailee Steinfeld, Brian Tyree Henry",
+    description: "Miles Morales travels across the multiverse and encounters a team of Spider-People protecting its existence.",
+    poster: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/4HodYYKEIsGOdinkGi2Ucz6X9i0.jpg",
+    rows: ["scifi", "action"]
+  },
+  {
+    id: "johnwick", title: "John Wick: Chapter 4", year: 2023,
+    genre: "Action, Thriller",
+    cast: "Keanu Reeves, Donnie Yen, Bill Skarsgård",
+    description: "John Wick discovers a way to defeat the High Table, but powerful enemies stand between him and freedom.",
+    poster: "https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/7I6VUdPj6tQECNHdviJkUHD2u89.jpg",
+    rows: ["action"]
+  }
+];
+
+function renderMovies() {
+  ["trending", "scifi", "action"].forEach(row => {
+    const container = document.getElementById(row);
+    const list = movies.filter(movie => movie.rows.includes(row));
+
+    container.innerHTML = list.map(movie => `
+      <article class="movie-card" tabindex="0"
+        role="button" data-id="${movie.id}"
+        aria-label="Show details for ${movie.title}">
+        <div class="poster">
+          <img src="${movie.poster}"
+               alt="${movie.title} official movie poster"
+               loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="poster-fallback" style="display:none">
+            <strong>${movie.title}</strong>
+            <small>${movie.year} · Movie</small>
+          </div>
+        </div>
+        <div class="movie-info">
+          <h3>${movie.title}</h3>
+          <p>${movie.year} · ${movie.genre}</p>
+        </div>
+      </article>
+    `).join("");
+  });
+}
+
+function showMovie(id) {
+  const movie = movies.find(item => item.id === id);
+  if (!movie) return;
+
+  document.getElementById("detailTitle").textContent = movie.title;
+  document.getElementById("detailMeta").textContent =
+    `${movie.year} · ${movie.genre}`;
+  document.getElementById("detailDescription").textContent =
+    movie.description;
+  document.getElementById("detailGenre").textContent = movie.genre;
+  document.getElementById("detailCast").textContent = movie.cast;
+
+  document.getElementById("detailBanner").style.backgroundImage =
+    `linear-gradient(0deg,#181818,transparent),url("${movie.backdrop}")`;
+
+  document.getElementById("modal").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMovie() {
+  document.getElementById("modal").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+document.addEventListener("click", event => {
+  const card = event.target.closest(".movie-card");
+  if (card) showMovie(card.dataset.id);
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeMovie();
+
+  if (event.target.matches(".movie-card") &&
+      (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    showMovie(event.target.dataset.id);
+  }
+});
+
+document.getElementById("modal").addEventListener("click", event => {
+  if (event.target.id === "modal") closeMovie();
+});
+
+document.getElementById("search").addEventListener("input", event => {
+  const query = event.target.value.trim().toLowerCase();
+  let found = 0;
+
+  document.querySelectorAll(".movie-card").forEach(card => {
+    const visible = card.textContent.toLowerCase().includes(query);
+    card.style.display = visible ? "" : "none";
+    if (visible) found++;
+  });
+
+  document.getElementById("searchMessage").textContent =
+    query && found === 0 ? "No movies found. Try another title." : "";
+});
+
+renderMovies();
+</script>
+
+</body>
+</html>
